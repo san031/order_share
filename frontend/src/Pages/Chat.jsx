@@ -129,6 +129,14 @@ export default function Chat({ me, groupId, timeline, dms, cards, joins, actions
                       onJoin={(qty) => actions.joinCard(t.cardId, qty)} />
                   ) : null;
                 }
+                if (t.kind === "bot") {
+                  return (
+                    <div key={t.id} className="bot-note">
+                      <span className="bot-badge">Order Bot</span>
+                      <span>{t.text}</span>
+                    </div>
+                  );
+                }
                 if (t.kind === "join") {
                   return (
                     <div key={t.id} className="sys">

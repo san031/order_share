@@ -4,6 +4,7 @@ import { NCEngine, ConnectionStatusHandler, MessageHandler } from "@nexconn/chat
 // Custom message types (shape taken from index.d.ts, not yet checked against docs)
 export const CARD_TYPE = "app:card"; // content: { cardId, item, price, target }
 export const JOIN_TYPE = "app:join"; // content: { cardId, qty }  (latest qty per user wins)
+export const BOT_USER_ID = "orderbot"; // Django's order bot (backend chat/bot.py)
 
 let started = false;
 let onMessages = () => {};

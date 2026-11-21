@@ -47,5 +47,8 @@ export const login = (username, password) => post("/auth/login/", { username, pa
 export const logout = () => post("/auth/logout/");
 export const getChatToken = () => post("/chat-token/");
 export const createGroup = (groupName) => post("/groups/", { groupName });
+// Ask Django's order bot to post the "target reached" summary into the room (once per card)
+export const targetReached = (groupId, payload) =>
+  post(`/groups/${encodeURIComponent(groupId)}/target-reached/`, payload);
 export const joinGroupByName = (name) => post("/groups/join-by-name/", { name });
 export const joinGroup = (groupId) => post(`/groups/${encodeURIComponent(groupId)}/join/`);

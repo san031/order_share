@@ -248,6 +248,31 @@ ul { margin: 0; padding: 0; list-style: none; }
   padding: 4px 12px;
 }
 
+.bot-note {
+  align-self: center;
+  width: min(100%, 440px);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(133, 153, 0, 0.12);
+  border: 1px solid rgba(133, 153, 0, 0.35);
+  color: var(--text-strong);
+  border-radius: 14px;
+  padding: 10px 14px;
+  font-size: 14px;
+}
+.bot-badge {
+  align-self: flex-start;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--base3);
+  background: var(--ok);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
 /* ---------- Item card ---------- */
 .item-card {
   align-self: center;

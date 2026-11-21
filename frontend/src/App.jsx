@@ -9,7 +9,7 @@ import {
   GroupChannelIdentifier
 } from "@nexconn/chat";
 import * as api from "./api";
-import { initChat, connectChat, disconnectChat, CARD_TYPE, JOIN_TYPE } from "./chatClient";
+import { initChat, connectChat, disconnectChat, CARD_TYPE, JOIN_TYPE, BOT_USER_ID } from "./chatClient";
 import Login from "./Pages/Login";
 import Signin from "./Pages/Signin";
 import Chat from "./Pages/Chat";
@@ -60,8 +60,10 @@ export default function App() {
           applyJoin(from, m.content);
           pushRoom({ groupId: gid, kind: "join", from, cardId: m.content?.cardId, qty: m.content?.qty });
         } else {
-          // Text messages carry content.text; anything else (e.g. group notifications) shows its type
-          pushRoom({ groupId: gid, kind: "text", from, text: m.content?.text ?? `(${m.messageType})` });
+          // Text messages carry content.text; anything else (e.g. group notifications) shows its type.
+          // content.content: the Server API's text format, in case the SDK passes it through as-is.
+          const text = m.content?.text ?? m.content?.content ?? `(${m.messageType})`;
+          pushRoom({ groupId: gid, kind: from === BOT_USER_ID ? "bot" : "text", from, text });
         }
       } else {
         pushDm({ from, peer: from, text: m.content?.text ?? `(${m.messageType})` });
@@ -218,6 +220,19 @@ export default function App() {
     if (code !== 0) { alert("Join item failed, code " + code); return false; }
     applyJoin(me, content);
     pushRoom({ groupId, kind: "join", from: me, cardId, qty });
+
+    // If my join is what completed the target, ask Django's bot to post the summary.
+    // Django only posts once per card, so repeat calls are harmless.
+    const card = cards[cardId];
+    const before = othersTotal + (people[me] || 0);
+    const after = othersTotal + qty;
+    if (before < card.target && after >= card.target) {
+      const shares = { ...people, [me]: qty };
+      const r = await api.targetReached(groupId, {
+        cardId, item: card.item, price: card.price, target: card.target, shares,
+      });
+      if (!r.ok) console.warn("Order bot summary failed:", api.errorText(r, "Bot error"));
+    }
     return true;
   }
 
