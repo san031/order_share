@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import (
     SignupView, LoginView, LogoutView, ChatTokenView, CreateGroupView, JoinGroupView,MyGroupsView,
-    JoinByNameView,
+    JoinByNameView, TargetReachedView,
 )
 
 urlpatterns = [
@@ -13,6 +13,7 @@ urlpatterns = [
     path("groups/<str:group_id>/join/", JoinGroupView.as_view()),
     path("groups/mine/", MyGroupsView.as_view()),
     path("groups/join-by-name/", JoinByNameView.as_view()),
+    path("groups/<str:group_id>/target-reached/", TargetReachedView.as_view()),
 
     
 ]

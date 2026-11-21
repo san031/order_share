@@ -13,7 +13,10 @@ from .serializers import (
     JoinByNameSerializer,
 )
 
-from .models import User, Room, Membership
+from .models import User, Room, Membership, BotSummary
+from . import bot
+from .serializers import TargetReachedSerializer
+from django.db import IntegrityError
 
 # All views below require "Authorization: Token <key>" (settings.REST_FRAMEWORK),
 # except signup and login. The Nexconn user ID is always request.user.username.
@@ -149,6 +152,39 @@ class JoinByNameView(APIView):
 
         Membership.objects.get_or_create(user=request.user, room=room)
         return Response({"groupId": room.group_id, "name": room.name})
+
+
+class TargetReachedView(APIView):
+    """POST /api/groups/<group_id>/target-reached/ {cardId, item, price, target, shares}
+
+    Called by the browser whose join completed a card's target. The order bot posts one
+    summary message into the room; repeat calls for the same card do nothing.
+    """
+    def post(self, request, group_id):
+        room = Room.objects.filter(group_id=group_id).first()
+        if room is None:
+            return Response({"error": "Room not found"}, status=404)
+        if not Membership.objects.filter(user=request.user, room=room).exists():
+            return Response({"error": "You're not in this room."}, status=403)
+
+        s = TargetReachedSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        d = s.validated_data
+        text = bot.summary_text(d["item"], d["price"], d["target"], d["shares"])
+
+        # Claim the card first so two browsers can't both trigger a summary
+        try:
+            summary = BotSummary.objects.create(room=room, card_id=d["cardId"], text=text)
+        except IntegrityError:
+            return Response({"status": "already posted"})
+
+        try:
+            bot.post_to_room(room.group_id, text)
+        except NexconnError as e:
+            summary.delete()  # let a later call try again
+            return Response({"error": e.detail}, status=502)
+
+        return Response({"status": "posted", "text": text}, status=201)
 
 
 class MyGroupsView(APIView):

@@ -1,7 +1,10 @@
+import re
+
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
+from .bot import BOT_USER_ID
 from .models import User, Room
 
 USERNAME_RE = r"^[a-z0-9]{3,20}$"  # also the Nexconn user ID
@@ -14,6 +17,8 @@ class SignupSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True, max_length=128, trim_whitespace=False)
 
     def validate_username(self, value):
+        if value == BOT_USER_ID:
+            raise serializers.ValidationError("That username is reserved.")
         if User.objects.filter(username=value).exists():
             raise serializers.ValidationError("That username is already taken.")
         return value
@@ -44,6 +49,28 @@ class CreateGroupSerializer(serializers.Serializer):
 
 class JoinByNameSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=64)  # trimmed by DRF; matched ignoring case
+
+
+class TargetReachedSerializer(serializers.Serializer):
+    """Sent by the browser whose join completed an item card's target."""
+    cardId = serializers.RegexField(r"^[a-z0-9]{1,32}$")
+    item = serializers.CharField(max_length=64)
+    price = serializers.FloatField(min_value=0.01)
+    target = serializers.IntegerField(min_value=1)
+    shares = serializers.DictField(child=serializers.IntegerField(min_value=1), allow_empty=False)  # {userId: qty}
+
+    def validate_shares(self, value):
+        if len(value) > 100:
+            raise serializers.ValidationError("Too many people.")
+        for user_id in value:
+            if not re.fullmatch(USERNAME_RE, user_id):
+                raise serializers.ValidationError(f"Invalid user ID: {user_id}")
+        return value
+
+    def validate(self, data):
+        if sum(data["shares"].values()) < data["target"]:
+            raise serializers.ValidationError("The target hasn't been reached yet.")
+        return data
 
 
 class JoinGroupSerializer(serializers.Serializer):

@@ -26,3 +26,14 @@ class Membership(models.Model):
 
     class Meta:
         unique_together = ("user", "room")
+
+
+class BotSummary(models.Model):
+    """One row per item card whose target was reached, so the bot posts its summary only once."""
+    card_id = models.CharField(max_length=32)
+    room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name="bot_summaries")
+    text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("room", "card_id")
